@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Científica Alquimista 3D</title>
+    <!-- Librerías de procesamiento matemático y gráficos 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            gap: 25px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 1150px;
+        }
+
+        .calc-panel {
+            flex: 1;
+            max-width: 460px;
+        }
+
+        .graph-panel {
+            flex: 1.3;
+            background: #0f172a;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            min-height: 550px;
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            color: #38bdf8;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+            text-align: center;
+        }
+
+        .screen {
+            background-color: #070a12;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.7);
+        }
+
+        .mode-selector {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #38bdf8;
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .mode-selector option {
+            background-color: #090d16;
+            color: #f8fafc;
+        }
+
+        .display {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 1.8rem;
+            text-align: right;
+            outline: none;
+            font-family: 'Courier New', Courier, monospace;
+            margin-bottom: 5px;
+        }
+
+        .result-box {
+            text-align: right;
+            font-size: 1.3rem;
+            color: #a7f3d0;
+            text-shadow: 0 0 8px rgba(167, 243, 208, 0.5);
+            min-height: 1.8rem;
+            font-family: 'Courier New', Courier, monospace;
+            word-wrap: break-word;
+            font-weight: 600;
+        }
+
+        .error-text {
+            color: #fca5a5 !important;
+            text-shadow: 0 0 8px rgba(252, 165, 165, 0.5) !important;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        button {
+            background-color: #334155;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 14px 8px;
+            font-size: 1.15rem;
+            color: #f1f5f9;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        button:hover {
+            background-color: #475569;
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.op {
+            background-color: #0284c7;
+            color: #ffffff;
+        }
+        
+        button.op:hover {
+            background-color: #0369a1;
+        }
+
+        button.special {
+            background-color: #0f766e;
+            color: #ccfbf1;
+            font-size: 0.95rem;
+        }
+        
+        button.special:hover {
+            background-color: #115e59;
+        }
+
+        button.clear {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+        
+        button.clear:hover {
+            background-color: #dc2626;
+        }
+
+        button.action {
+            background-color: #38bdf8;
+            color: #0f172a;
+            grid-column: span 2;
+        }
+
+        button.action:hover {
+            background-color: #7dd3fc;
+        }
+
+        #plot3d {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            border-radius: 12px;
+        }
+
+        .graph-title {
+            color: #38bdf8;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 950px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .calc-panel {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <!-- PANEL IZQUIERDO: CALCULADORA -->
+        <div class="calc-panel">
+            <h2>Calculadora Inteligente</h2>
+            <div class="screen">
+                <select id="calcMode" class="mode-selector" onchange="changeMode()">
+                    <option value="standard">Aritmética e Integrales (Ej: x^2)</option>
+                    <option value="dec-bin">Conversión: Decimal a Binario</option>
+                    <option value="bin-dec">Conversión: Binario a Decimal</option>
+                    <option value="dec-hex">Conversión: Decimal a Hexadecimal</option>
+                    <option value="hex-dec">Conversión: Hexadecimal a Decimal</option>
+                </select>
+                <input type="text" id="display" class="display" placeholder="0">
+                <div id="result" class="result-box"></div>
+            </div>
+
+            <div class="keypad">
+                <!-- Control Superior -->
+                <button class="clear" onclick="clearAll()">C</button>
+                <button class="op" onclick="btnInput('(')">(</button>
+                <button class="op" onclick="btnInput(')')">)</button>
+                <button class="op" onclick="backspace()">⌫</button>
+
+                <!-- Funciones Especiales -->
+                <button class="special" onclick="btnInput('int(')">∫ Indef</button>
+                <button class="special" onclick="promptDefInt()">∫ Def</button>
+                <button class="special" onclick="btnInput('x')">x</button>
+                <button class="op" onclick="btnInput('/')">/</button>
+
+                <!-- Bloque Números / Operadores -->
+                <button onclick="btnInput('7')">7</button>
+                <button onclick="btnInput('8')">8</button>
+                <button onclick="btnInput('9')">9</button>
+                <button class="op" onclick="btnInput('*')">*</button>
+
+                <button onclick="btnInput('4')">4</button>
+                <button onclick="btnInput('5')">5</button>
+                <button onclick="btnInput('6')">6</button>
+                <button class="op" onclick="btnInput('-')">-</button>
+
+                <button onclick="btnInput('1')">1</button>
+                <button onclick="btnInput('2')">2</button>
+                <button onclick="btnInput('3')">3</button>
+                <button class="op" onclick="btnInput('+')">+</button>
+
+                <button onclick="btnInput('0')">0</button>
+                <button class="op" onclick="btnInput('.')">.</button>
+                <button class="op" onclick="btnInput('^')">^</button>
+                <button class="special" onclick="btnInput('y')">y</button>
+
+                <!-- Letras Hexadecimales -->
+                <button class="special" onclick="btnInput('A')">A</button>
+                <button class="special" onclick="btnInput('B')">B</button>
+                <button class="special" onclick="btnInput('C')">C</button>
+                <button class="special" onclick="btnInput('D')">D</button>
+
+                <button class="special" onclick="btnInput('E')">E</button>
+                <button class="special" onclick="btnInput('F')">F</button>
+                <button class="action" onclick="executeProcess()">Calcular / Graficar</button>
+            </div>
+        </div>
+
+        <!-- PANEL DERECHO: VISUALIZADOR GRÁFICO 3D -->
+        <div class="graph-panel">
+            <div id="graphTitle" class="graph-title">Gráfica 3D Interactiva</div>
+            <div id="plot3d"></div>
+        </div>
+    </div>
+
+    <script>
+        const display = document.getElementById('display');
+        const resultBox = document.getElementById('result');
+        const calcMode = document.getElementById('calcMode');
+        const graphTitle = document.getElementById('graphTitle');
+
+        function btnInput(val) {
+            display.value += val;
+        }
+
+        function clearAll() {
+            display.value = '';
+            resultBox.innerText = '';
+            resultBox.classList.remove('error-text');
+        }
+
+        function backspace() {
+            display.value = display.value.slice(0, -1);
+        }
+
+        function changeMode() {
+            clearAll();
+        }
+
+        function promptDefInt() {
+            let expr = prompt("Ingresa la función con respecto a x (Ejemplo: x^2):", display.value || "x^2");
+            if (!expr) return;
+            let a = prompt("Límite inferior (a):", "0");
+            let b = prompt("Límite superior (b):", "1");
+            if (a !== null && b !== null) {
+                display.value = `intDef(${expr}, ${a}, ${b})`;
+            }
+        }
+
+        // Algoritmo refinado para resolver y parsear integrales indefinidas de polinomios completos compuestos f(x)
+        function resolverIntegralPolinomica(funcionStr) {
+            let expr = funcionStr.replace(/\s+/g, '').toLowerCase();
+            
+            // Reemplazos de formato comunes para homogeneizar el parseo
+            expr = expr.replace(/-/g, '+-');
+            let terminos = expr.split('+');
+            let resultadoTerminos = [];
+
+            for (let termino of terminos) {
+                if (!termino) continue;
+                
+                // Caso 1: Término puramente numérico (ej: "5" o "-2")
+                if (!isNaN(termino)) {
+                    resultadoTerminos.push(`${termino}*x`);
+                    continue;
+                }
+
+                // Caso 2: Término con x simple (ej: "x", "-x", "3*x", "4x")
+                if (termino === 'x') {
+                    resultadoTerminos.push("0.5*x^2");
+                    continue;
+                }
+                if (termino === '-x') {
+                    resultadoTerminos.push("-0.5*x^2");
+                    continue;
+                }
+
+                // Caso 3: Formato general x^n o ax^n o a*x^n
+                let matchConPotencia = termino.match(/^([0-9\.\-]+)?\*?x\^([0-9\.\-]+)$/);
+                if (matchConPotencia) {
+                    let coef = matchConPotencia[1] ? parseFloat(matchConPotencia[1]) : 1;
+                    let n = parseFloat(matchConPotencia[2]);
+                    
+                    if (n === -1) {
+                        resultadoTerminos.push(`${coef === 1 ? '' : coef + '*'}ln|x|`);
+                    } else {
+                        let nuevoCoef = coef / (n + 1);
+                        let nuevaPotencia = n + 1;
+                        // Simplificación visual básica
+                        let coefStr = nuevoCoef === 1 ? '' : nuevoCoef === -1 ? '-' : nuevoCoef.toFixed(2).replace(/\.00$/, '');
+                        resultadoTerminos.push(`${coefStr}*x^${nuevaPotencia}`);
+                    }
+                    continue;
+                }
+
+                // Caso 4: Formato ax o a*x (sin exponente explícito)
+                let matchMultiploSimple = termino.match(/^([0-9\.\-]+)?\*?x$/);
+                if (matchMultiploSimple) {
+                    let coef = matchMultiploSimple[1] ? parseFloat(matchMultiploSimple[1]) : 1;
+                    let nuevoCoef = coef / 2;
+                    let coefStr = nuevoCoef.toFixed(2).replace(/\.00$/, '');
+                    resultadoTerminos.push(`${coefStr}*x^2`);
+                    continue;
+                }
+
+                // Fallback si el término es trigonométrico o muy complejo
+                if (termino.includes('sin') || termino.includes('sen')) return "cos(x) [Aprox]";
+                if (termino.includes('cos')) return "sin(x) [Aprox]";
+                
+                return null;
+            }
+
+            if (resultadoTerminos.length === 0) return null;
+
+            // Unir términos de vuelta limpiando signos sumados de forma consecutiva
+            let finalStr = resultadoTerminos.join(' + ').replace(/\+ \-/g, '- ');
+            return finalStr + " + C";
+        }
+
+        function executeProcess() {
+            resultBox.classList.remove('error-text');
+            const mode = calcMode.value;
+            const input = display.value.trim();
+
+            if (!input) {
+                showError("Entrada vacía");
+                return;
+            }
+
+            try {
+                if (mode !== 'standard') {
+                    processConversions(mode, input);
+                    return;
+                }
+
+                // MÓDULO: INTEGRALES DEFINIDAS
+                if (input.startsWith('intDef(')) {
+                    let params = input.substring(7, input.length - 1).split(',');
+                    if(params.length !== 3) throw new Error();
+                    let expr = params[0];
+                    let a = parseFloat(math.evaluate(params[1]));
+                    let b = parseFloat(math.evaluate(params[2]));
+                    
+                    let pasos = 1000;
+                    let h = (b - a) / pasos;
+                    let suma = 0;
+                    for(let i=0; i<=pasos; i++) {
+                        let x = a + i*h;
+                        let y = math.evaluate(expr, {x: x});
+                        if (i === 0 || i === pasos) suma += y;
+                        else if (i % 2 === 0) suma += 2 * y;
+                        else suma += 4 * y;
+                    }
+                    let res = (h / 3) * suma;
+                    resultBox.innerText = `Área: ${res.toFixed(5)}`;
+                    graficarSuperficie(expr); 
+                    return;
+                }
+
+                // MÓDULO: INTEGRALES INDEFINIDAS (CON PARSEO DE POLINOMIOS COMPUESTOS)
+                if (input.startsWith('int(')) {
+                    let expr = input.substring(4, input.length - 1);
+                    let resSimbolico = resolverIntegralPolinomica(expr);
+                    
+                    if (resSimbolico) {
+                        resultBox.innerText = "Solución: " + resSimbolico;
+                    } else {
+                        resultBox.innerText = `∫(${expr}) dx + C`;
+                    }
+                    graficarSuperficie(expr);
+                    return;
+                }
+
+                let evalResult = math.evaluate(input);
+                resultBox.innerText = `Resultado: ${evalResult}`;
+                
+                if(input.includes('x') || input.includes('y')) {
+                    graficarSuperficie(input);
+                } else {
+                    graficarSuperficie("x^2 + y^2");
+                }
+
+            } catch (err) {
+                showError("Error de sintaxis");
+            }
+        }
+
+        function processConversions(mode, input) {
+            if(mode === 'dec-bin') {
+                let num = parseInt(input, 10);
+                if(isNaN(num)) throw new Error();
+                resultBox.innerText = "Binario: " + num.toString(2);
+            } else if(mode === 'bin-dec') {
+                if(!/^[01]+$/.test(input)) { showError("Binario inválido"); return; }
+                resultBox.innerText = "Decimal: " + parseInt(input, 2);
+            } else if(mode === 'dec-hex') {
+                let num = parseInt(input, 10);
+                if(isNaN(num)) throw new Error();
+                resultBox.innerText = "Hexadecimal: " + num.toString(16).toUpperCase();
+            } else if(mode === 'hex-dec') {
+                if(!/^[0-9A-Fa-f]+$/.test(input)) { showError("Hexadecimal inválido"); return; }
+                resultBox.innerText = "Decimal: " + parseInt(input, 16);
+            }
+        }
+
+        function showError(msg) {
+            resultBox.innerText = msg;
+            resultBox.classList.add('error-text');
+        }
+
+        function graficarSuperficie(expresionMatematica) {
+            let xValores = [];
+            let yValores = [];
+            let zValores = [];
+
+            for (let i = -5; i <= 5; i += 0.3) {
+                xValores.push(i);
+                yValores.push(i);
+            }
+
+            try {
+                let compiledExpr = math.compile(expresionMatematica);
+
+                for (let i = 0; i < xValores.length; i++) {
+                    let zFila = [];
+                    for (let j = 0; j < yValores.length; j++) {
+                        let zVal = 0;
+                        try {
+                            zVal = compiledExpr.evaluate({ x: xValores[i], y: yValores[j] });
+                            if(typeof zVal === 'object') zVal = zVal.entries ? zVal.entries[0] : 0;
+                        } catch(e) {
+                            zVal = 0;
+                        }
+                        zFila.push(zVal);
+                    }
+                    zValores.push(zFila);
+                }
+
+                let data = [{
+                    z: zValores,
+                    x: xValores,
+                    y: yValores,
+                    type: 'surface',
+                    colorscale: 'Viridis',
+                    showscale: true,
+                    colorbar: {
+                        tickfont: { color: '#ffffff', size: 11 },
+                        title: { text: 'Altura (Z)', font: { color: '#38bdf8', size: 12 } }
+                    }
+                }];
+
+                let axisTemplate = {
+                    backgroundcolor: '#070a12',
+                    gridcolor: '#334155',
+                    showbackground: true,
+                    zerolinecolor: '#38bdf8',
+                    zerolinewidth: 2,
+                    tickfont: { color: '#ffffff', size: 11, family: 'Arial, sans-serif' },
+                    title: {
+                        font: { color: '#38bdf8', size: 13, fontWeight: 'bold' }
+                    }
+                };
+
+                let layout = {
+                    title: '', 
+                    autosize: true,
+                    paper_bgcolor: '#0f172a',
+                    plot_bgcolor: '#0f172a',
+                    font: { color: '#38bdf8', size: 10 },
+                    scene: {
+                        xaxis: Object.assign({}, axisTemplate, { title: { text: 'Eje X (Base)' } }),
+                        yaxis: Object.assign({}, axisTemplate, { title: { text: 'Eje Y (Base)' } }),
+                        zaxis: Object.assign({}, axisTemplate, { title: { text: 'Eje Z (Altura)' } })
+                    },
+                    margin: { l: 0, r: 0, b: 0, t: 10 }
+                };
+
+                graphTitle.innerText = `Gráfica 3D: f(x, y) = ${expresionMatematica}`;
+                Plotly.newPlot('plot3d', data, layout, {responsive: true});
+
+            } catch(err) {
+                Plotly.newPlot('plot3d', [{
+                    z: xValores.map(x => yValores.map(y => Math.sin(x) * Math.cos(y))),
+                    type: 'surface', colorscale: 'Hot'
+                }], {paper_bgcolor: '#0f172a', title: "Ecuación compleja (Muestra)"});
+            }
+        }
+
+        graficarSuperficie("x^2 - y^2");
+    </script>
+</body>
+</html>
